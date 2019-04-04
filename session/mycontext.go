@@ -75,9 +75,3 @@ func (sm *SessionManager) Remove(key string) bool {
 	}
 	return false
 }
-
-func begin() {
-	for {
-
-	}
-}

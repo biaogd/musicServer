@@ -6,10 +6,41 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>音乐管理</title>
     <style>
-    
+        #main{
+            margin-left: 20%;
+            margin-right: 20%;
+        }
+        #div1{
+            float: left;
+        }
+        #form1{
+            text-align: center;
+        }
+        #addMusic{
+            float: right;
+        }
     </style>
 </head>
 <body>
-    <h1>hello world</h1>
+    <div id="main">
+        <div id="div1">当前歌曲的总数目:{{.size}}</div>
+        <div id="form1">
+        <form method="GET" action="" onsubmit="">
+            <input type="text" name="keyWord">
+            <input type="submit" value="查询">
+        </form>
+        </div >
+        <br>
+        <a href="/song/uploadPage">上传歌曲</a>
+        <ul>
+            {{range $i,$v := .musicList}}
+            <li></li>
+            {{end}}
+        </ul>
+    </div>
+    
+    <script>
+        
+    </script>
 </body>
 </html>

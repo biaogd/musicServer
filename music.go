@@ -7,7 +7,7 @@ type music struct {
 	SongName   string
 	SongAuthor string
 	AllTime    int
-	SongSize   int
+	SongSize   int64
 	URL        string
 }
 
