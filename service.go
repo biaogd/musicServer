@@ -11,6 +11,7 @@ func transform(song string, size int64) music {
 		mu.AllTime = 0
 		mu.SongSize = size
 		mu.URL = song
+		mu.Count = 0
 	}
 	return mu
 }

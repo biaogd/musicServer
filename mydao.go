@@ -21,13 +21,13 @@ func getDB() *sql.DB {
 func insertMusic(m music) error {
 	db := getDB()
 	defer db.Close()
-	sql := "insert into music(song_name,song_author,all_time,song_size,url) values(?,?,?,?,?)"
+	sql := "insert into music(song_name,song_author,all_time,song_size,url,count) values(?,?,?,?,?,?)"
 	state, err := db.Prepare(sql)
 	if err != nil {
 		log.Println(err)
 		return errors.New("sql 语句有语法错误在prepare(sql)")
 	}
-	row, err := state.Exec(m.SongName, m.SongAuthor, m.AllTime, m.SongSize, m.URL)
+	row, err := state.Exec(m.SongName, m.SongAuthor, m.AllTime, m.SongSize, m.URL, m.Count)
 	if err != nil {
 		log.Println(err)
 		return errors.New("插入歌曲信息错误")
@@ -71,4 +71,87 @@ func findMusicBySongName(name string) int {
 	}
 	log.Printf("查找到歌曲的总数,%d", size)
 	return size
+}
+
+//歌曲搜索
+func findMusicByWord(word string) []music {
+	var musicList []music
+	db := getDB()
+	defer db.Close()
+	sql := "select *from music where url like concat('%',?,'%')"
+	state, _ := db.Prepare(sql)
+	row, err := state.Query(word)
+	if err != nil {
+		log.Panicln(err)
+	}
+	for row.Next() {
+		var mu music
+		row.Scan(&mu.ID, &mu.SongName, &mu.SongAuthor, &mu.AllTime, &mu.SongSize, &mu.URL, &mu.Count)
+		musicList = append(musicList, mu)
+	}
+	return musicList
+}
+
+//id搜索歌曲
+func findMusicById(id string) string {
+	var url string
+	db := getDB()
+	defer db.Close()
+	sql := "select url from music where id=?"
+	state, _ := db.Prepare(sql)
+	row, _ := state.Query(id)
+	for row.Next() {
+		row.Scan(&url)
+	}
+	return url
+}
+
+//返回最大的版本号和安装包文件名
+func findMaxVCode() (int, string, string) {
+	db := getDB()
+	defer db.Close()
+	var path string
+	var content string
+	var vCode int
+	sql := "select max(v_code) from version"
+	row, _ := db.Query(sql)
+	for row.Next() {
+		row.Scan(&vCode)
+	}
+	sqls := "select content,name from version where v_code = ?"
+	state, _ := db.Prepare(sqls)
+	rows, _ := state.Query(vCode)
+	for rows.Next() {
+		rows.Scan(&content, &path)
+		break
+	}
+	return vCode, content, path
+}
+
+//把安装包文件名和版本号添加到数据库当中
+func insertApp(vCode string, content string, name string) {
+	db := getDB()
+	defer db.Close()
+	if vCode != "" && name != "" {
+		sql := "insert into version(v_code,content,name) values(?,?,?)"
+		state, _ := db.Prepare(sql)
+		state.Exec(vCode, content, name)
+	}
+}
+
+//把歌曲的收听次数加1,param id
+func addCount(id int) {
+	db := getDB()
+	defer db.Close()
+	sql := "update music set count = count+1 where id =?"
+	state, _ := db.Prepare(sql)
+	state.Exec(id)
+}
+
+//清空所有歌曲的count值
+func clearCount() {
+	db := getDB()
+	defer db.Close()
+	sql := "update music set count=0"
+	db.Exec(sql)
 }

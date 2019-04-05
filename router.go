@@ -1,13 +1,21 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"music/session"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"text/template"
+)
+
+const (
+	musicDir = "/home/biao/music/"
+	apkdir   = "/home/biao/apkdir/"
 )
 
 var man = session.GetManager()
@@ -25,6 +33,9 @@ func loginIn(w http.ResponseWriter, r *http.Request) {
 func mainPage(w http.ResponseWriter, r *http.Request) {
 	many := make(map[string]interface{})
 	many["size"] = getMusicCount()
+	vCode, _, name := findMaxVCode()
+	many["vCode"] = vCode
+	many["name"] = name
 	if man.Contains("user") {
 		log.Println("函数mainPage执行了")
 		t := template.Must(template.ParseFiles("static/main.html"))
@@ -42,7 +53,7 @@ func comeWabSite(w http.ResponseWriter, r *http.Request) {
 	if !man.Contains("user") {
 		pw := r.PostForm["password"][0]
 		if pw == "123456" {
-			man.Set("user", session.Session{pw, 20})
+			man.Set("user", session.Session{pw, 60 * 30})
 			log.Println("登陆成功")
 			http.Redirect(w, r, "/main", http.StatusFound)
 		}
@@ -65,20 +76,22 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 	reqSongFile, hander, err := r.FormFile("songFile")
 	if err != nil {
 		log.Println(err)
+		fmt.Fprintln(w, "上传文件失败", err)
 	}
 	reqLrcFile, hander1, err := r.FormFile("lrcFile")
 	if err != nil {
 		println(err)
+		fmt.Fprintln(w, "上传文件失败", err)
 	}
 	//这首歌没有被加入到数据库当中
 	if findMusicBySongName(hander.Filename) == 0 {
 
-		songFile, err := os.Create("/home/biao/music/" + hander.Filename)
+		songFile, err := os.Create(musicDir + hander.Filename)
 		if err != nil {
 			println(err)
 		}
 		io.Copy(songFile, reqSongFile)
-		lrcFile, err := os.Create("/home/biao/music/" + hander1.Filename)
+		lrcFile, err := os.Create(musicDir + hander1.Filename)
 		if err != nil {
 			println(err)
 		}
@@ -88,6 +101,8 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 		insertMusic(m)
 		log.Println("歌曲信息已插入到数据库当中")
 		fmt.Fprintln(w, "上传并插入到数据库成功")
+	} else {
+		fmt.Fprintln(w, "该歌曲已存在")
 	}
 
 }
@@ -95,4 +110,87 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 func toUpload(w http.ResponseWriter, r *http.Request) {
 	t := template.Must(template.ParseFiles("static/upload.html"))
 	t.Execute(w, nil)
+}
+
+//根据关键字搜索音乐并且返回json
+func searchSong(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	words := r.Form["keyWord"]
+	var word string
+	if len(words) > 0 {
+		word = words[0]
+	}
+	mList := findMusicByWord(word)
+	bytes, _ := json.Marshal(mList)
+	w.Write(bytes)
+}
+
+//根据歌曲id下载歌曲
+func getSong(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	id := r.Form["id"][0]
+	if id != "" {
+		url := findMusicById(id)
+		path := musicDir + url
+		//收听的次数加1
+		ids, _ := strconv.Atoi(id)
+		addCount(ids)
+		http.ServeFile(w, r, path)
+	}
+}
+
+//根据id下载歌词
+func getLrc(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	id := r.Form["id"][0]
+	if id != "" {
+		url := findMusicById(id)
+		str := strings.Split(url, ".")[0] + ".lrc"
+		path := musicDir + str
+		http.ServeFile(w, r, path)
+	}
+}
+
+//处理软件上传的
+func dealAppUpdate(w http.ResponseWriter, r *http.Request) {
+	r.ParseMultipartForm(100 * 1024 * 1024)
+	file, hander, _ := r.FormFile("updateApp")
+	apkFile, err := os.Create(apkdir + hander.Filename)
+	if err != nil {
+		log.Panicln(err)
+	}
+	io.Copy(apkFile, file)
+	code := r.PostForm["vCode"][0]
+	content := r.PostForm["content"][0]
+	insertApp(code, content, hander.Filename)
+	fmt.Fprintln(w, "上传成功")
+}
+
+//检查更新,传入版本号
+func checkUpdate(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	vCode := r.Form["code"][0]
+	vCode1, content, name := findMaxVCode()
+	vCode2, _ := strconv.Atoi(vCode)
+	if vCode1 > vCode2 {
+		var app myApp
+		app.Name = name
+		app.Content = content
+		app.Status = "ok"
+		bytes, _ := json.Marshal(app)
+		w.Write(bytes)
+	} else {
+		var app myApp
+		app.Status = "no"
+		bytes, _ := json.Marshal(app)
+		w.Write(bytes)
+	}
+}
+
+//直接下载最新版软件包
+func downloadApp(w http.ResponseWriter, r *http.Request) {
+	_, _, name := findMaxVCode()
+	if name != "" {
+		http.ServeFile(w, r, apkdir+name)
+	}
 }
