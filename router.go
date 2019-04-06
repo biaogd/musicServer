@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	musicDir = "/home/biao/music/"
-	apkdir   = "/home/biao/apkdir/"
+	musicDir = "/home/admin/mymusic/"
+	apkdir   = "/home/admin/apkdir/"
 )
 
 var man = session.GetManager()
@@ -115,7 +115,7 @@ func toUpload(w http.ResponseWriter, r *http.Request) {
 //根据关键字搜索音乐并且返回json
 func searchSong(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	words := r.Form["keyWord"]
+	words := r.Form["word"]
 	var word string
 	if len(words) > 0 {
 		word = words[0]
@@ -193,4 +193,24 @@ func downloadApp(w http.ResponseWriter, r *http.Request) {
 	if name != "" {
 		http.ServeFile(w, r, apkdir+name)
 	}
+}
+
+//返回热歌20个
+func returnPopularMusic(w http.ResponseWriter, r *http.Request) {
+	mList := getPopularByIds()
+	js, err := json.Marshal(mList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	w.Write(js)
+}
+
+//返回最新的20个歌曲
+func returnNewMusic(w http.ResponseWriter, r *http.Request) {
+	mList := getNewByIds()
+	js, err := json.Marshal(mList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	w.Write(js)
 }
