@@ -78,9 +78,12 @@ func findMusicByWord(word string) []music {
 	var musicList []music
 	db := getDB()
 	defer db.Close()
-	sql := "select *from music where url like concat('%',?,'%')"
+	//模糊搜索
+	// sql := "select *from music where url like concat('%',?,'%')"
+	//中文全文检索，这是默认的自然语言检索方式，还有boolean模式
+	sql := "select *from music where match(url) against(?)"
 	state, _ := db.Prepare(sql)
-	row, err := state.Query(word)
+	row, err := state.Query("*" + word + "*")
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -157,61 +160,62 @@ func clearCount() {
 }
 
 //返回歌曲收听次数的前20名
-func getMostListen() []music{
+func getMostListen() []music {
 	var mlist []music
 	db := getDB()
 	defer db.Close()
 	sql := "select *from music order by count desc limit 20"
-	rows,err := db.Query(sql)
-	if err!=nil{
+	rows, err := db.Query(sql)
+	if err != nil {
 		println(err)
 	}
-	for rows.Next(){
+	for rows.Next() {
 		var m music
-		rows.Scan(&m.ID,&m.SongName,&m.SongName,&m.AllTime,&m.SongSize,&m.URL,&m.Count)
-		mlist = append(mlist,m)
+		rows.Scan(&m.ID, &m.SongName, &m.SongName, &m.AllTime, &m.SongSize, &m.URL, &m.Count)
+		mlist = append(mlist, m)
 	}
 	return mlist
 }
 
 //返回歌曲最新上传的前20个
-func getNewMusic() []music{
+func getNewMusic() []music {
 	var mList []music
 	db := getDB()
 	defer db.Close()
 	sql := "select *from music order by id desc limit 20"
-	rows,err:=db.Query(sql)
-	if err!=nil{
+	rows, err := db.Query(sql)
+	if err != nil {
 		println(err)
 	}
-	for rows.Next(){
+	for rows.Next() {
 		var m music
-		rows.Scan(&m.ID,&m.SongName,&m.SongName,&m.AllTime,&m.SongSize,&m.URL,&m.Count)
-		mList = append(mList,m)
+		rows.Scan(&m.ID, &m.SongName, &m.SongName, &m.AllTime, &m.SongSize, &m.URL, &m.Count)
+		mList = append(mList, m)
 	}
 	return mList
 
 }
+
 //通过id查找歌曲，返回一个music
-func selectMusicById(id int) music{
+func selectMusicById(id int) music {
 	var m music
 	db := getDB()
-	defer  db.Close()
+	defer db.Close()
 	sql := "select *from music where id=?"
-	state,_:=db.Prepare(sql)
-	rows,err:=state.Query(id)
-	if err!=nil{
+	state, _ := db.Prepare(sql)
+	rows, err := state.Query(id)
+	if err != nil {
 		println(err)
 	}
-	for rows.Next(){
-		rows.Scan(&m.ID,&m.SongName,&m.SongName,&m.AllTime,&m.SongSize,&m.URL,&m.Count)
+	for rows.Next() {
+		rows.Scan(&m.ID, &m.SongName, &m.SongName, &m.AllTime, &m.SongSize, &m.URL, &m.Count)
 		break
 	}
 	return m
 }
 
 //清空两个排行榜的数据库
-func clearTable(){
+func clearTable() {
 	db := getDB()
 	defer db.Close()
 	sql1 := "delete from popular"
@@ -220,82 +224,82 @@ func clearTable(){
 	db.Exec(sql2)
 }
 
-
 //把最新的排行列表插入到两个表中
-func insertID(table string,mList []music){
+func insertID(table string, mList []music) {
 	db := getDB()
 	defer db.Close()
 	var sql string
-	if table=="popular"{
+	if table == "popular" {
 		sql = "insert into popular(song_id) values(?)"
-		state,err:=db.Prepare(sql)
-		if err!=nil{
+		state, err := db.Prepare(sql)
+		if err != nil {
 			println(err)
 		}
-		for _,mu := range mList{
+		for _, mu := range mList {
 			state.Exec(mu.ID)
 		}
-	}else {
+	} else {
 		sql = "insert into new(song_id) values(?)"
-		state,err:=db.Prepare(sql)
-		if err!=nil{
+		state, err := db.Prepare(sql)
+		if err != nil {
 			println(err)
 		}
-		for _,mu:=range mList{
+		for _, mu := range mList {
 			state.Exec(mu.ID)
 		}
 	}
 
 }
+
 //先从popular表中找到歌曲id,在从歌曲表中返回歌曲信息
-func getPopularByIds() []music{
-	db :=getDB()
+func getPopularByIds() []music {
+	db := getDB()
 	defer db.Close()
 	var ids []int
 	sql := "select song_id from popular"
-	rows,_ := db.Query(sql)
-	for rows.Next(){
+	rows, _ := db.Query(sql)
+	for rows.Next() {
 		var id int
 		rows.Scan(&id)
-		ids = append(ids,id)
+		ids = append(ids, id)
 	}
 	var mList []music
 	sqls := "select *from music where id=?"
-	state,_ := db.Prepare(sqls)
-	for _,id := range ids{
+	state, _ := db.Prepare(sqls)
+	for _, id := range ids {
 		var mu music
-		rows,_ := state.Query(id)
-		for rows.Next(){
+		rows, _ := state.Query(id)
+		for rows.Next() {
 			rows.Scan(&mu.ID, &mu.SongName, &mu.SongAuthor, &mu.AllTime, &mu.SongSize, &mu.URL, &mu.Count)
 			break
 		}
-		mList = append(mList,mu)
+		mList = append(mList, mu)
 	}
 	return mList
 }
 
-func getNewByIds() []music{
-	db :=getDB()
+func getNewByIds() []music {
+	db := getDB()
 	defer db.Close()
 	var ids []int
 	sql := "select song_id from new"
-	rows,_ := db.Query(sql)
-	for rows.Next(){
+	rows, _ := db.Query(sql)
+	for rows.Next() {
 		var id int
 		rows.Scan(&id)
-		ids = append(ids,id)
+		ids = append(ids, id)
 	}
 	var mList []music
 	sqls := "select *from music where id=?"
-	state,_ := db.Prepare(sqls)
-	for _,id := range ids{
+	state, _ := db.Prepare(sqls)
+	for _, id := range ids {
 		var mu music
-		rows,_ := state.Query(id)
-		for rows.Next(){
+		rows, _ := state.Query(id)
+		for rows.Next() {
 			rows.Scan(&mu.ID, &mu.SongName, &mu.SongAuthor, &mu.AllTime, &mu.SongSize, &mu.URL, &mu.Count)
 			break
 		}
-		mList = append(mList,mu)
+		mList = append(mList, mu)
 	}
 	return mList
 }

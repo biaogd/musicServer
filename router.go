@@ -135,6 +135,9 @@ func getSong(w http.ResponseWriter, r *http.Request) {
 		//收听的次数加1
 		ids, _ := strconv.Atoi(id)
 		addCount(ids)
+		fi, _ := os.Stat(path)
+		w.Header().Set("Content-Disposition", "attachment;filename="+fi.Name())
+		w.Header().Set("Content-Length", string(fi.Size()))
 		http.ServeFile(w, r, path)
 	}
 }
@@ -147,6 +150,9 @@ func getLrc(w http.ResponseWriter, r *http.Request) {
 		url := findMusicById(id)
 		str := strings.Split(url, ".")[0] + ".lrc"
 		path := musicDir + str
+		fi, _ := os.Stat(path)
+		w.Header().Set("Content-Disposition", "attachment;filename="+fi.Name())
+		w.Header().Set("Content-Length", string(fi.Size()))
 		http.ServeFile(w, r, path)
 	}
 }
@@ -191,6 +197,9 @@ func checkUpdate(w http.ResponseWriter, r *http.Request) {
 func downloadApp(w http.ResponseWriter, r *http.Request) {
 	_, _, name := findMaxVCode()
 	if name != "" {
+		w.Header().Set("Content-Disposition", "attachment;filename="+name)
+		fi, _ := os.Stat(apkdir + name)
+		w.Header().Set("Content-Length", string(fi.Size()))
 		http.ServeFile(w, r, apkdir+name)
 	}
 }
