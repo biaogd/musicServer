@@ -112,7 +112,7 @@ func toUpload(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, nil)
 }
 
-//根据关键字搜索音乐并且返回json
+//根据关键字搜索音乐并且返回json,使用模糊搜索
 func searchSong(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	words := r.Form["word"]
@@ -120,7 +120,27 @@ func searchSong(w http.ResponseWriter, r *http.Request) {
 	if len(words) > 0 {
 		word = words[0]
 	}
-	mList := findMusicByWord(word)
+	word = strings.TrimSpace(word)
+	mList := findMusicByWord(word, 0)
+	bytes, _ := json.Marshal(mList)
+	w.Write(bytes)
+}
+
+//根据关键字搜索音乐，使用mysql全文检索
+func searchSongByAllWord(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	words := r.Form["word"]
+	var word string
+	if len(words) > 0 {
+		word = words[0]
+	}
+	word = strings.TrimSpace(word)
+	var mList []music
+	if (strings.Count(word, "") - 1) == 1 {
+		mList = findMusicByWord(word, 0)
+	} else {
+		mList = findMusicByWord(word, 1)
+	}
 	bytes, _ := json.Marshal(mList)
 	w.Write(bytes)
 }

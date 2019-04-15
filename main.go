@@ -39,6 +39,7 @@ func main() {
 	http.HandleFunc("/song/upload", uploadFile)
 	http.HandleFunc("/song/uploadPage", toUpload)
 	http.HandleFunc("/search", searchSong)
+	http.HandleFunc("/searchBy", searchSongByAllWord)
 	http.HandleFunc("/song", getSong)
 	http.HandleFunc("/lrc", getLrc)
 	http.HandleFunc("/uploadApp", dealAppUpdate)

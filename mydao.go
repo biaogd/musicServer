@@ -73,17 +73,23 @@ func findMusicBySongName(name string) int {
 	return size
 }
 
-//歌曲搜索
-func findMusicByWord(word string) []music {
+//歌曲搜索,使用模糊搜索
+func findMusicByWord(word string, like int) []music {
 	var musicList []music
 	db := getDB()
 	defer db.Close()
+	var sql, param string
 	//模糊搜索
-	// sql := "select *from music where url like concat('%',?,'%')"
-	//中文全文检索，这是默认的自然语言检索方式，还有boolean模式
-	sql := "select *from music where match(url) against(?)"
+	if like == 0 {
+		sql = "select *from music where url like concat('%',?,'%')"
+		param = word
+	} else {
+		//中文全文检索，这是默认的自然语言检索方式，还有boolean模式
+		sql = "select *from music where match(url) against(?)"
+		param = "*" + word + "*"
+	}
 	state, _ := db.Prepare(sql)
-	row, err := state.Query("*" + word + "*")
+	row, err := state.Query(param)
 	if err != nil {
 		log.Panicln(err)
 	}
