@@ -364,17 +364,21 @@ func activation(email string) int64 {
 }
 
 //检查用户名密码是否正确
-func checkLogin(email string, password string) bool {
+func checkLogin(email string, password string) user {
 	db := getDB()
 	defer db.Close()
 	sql := "select *from users where email=? and password=?"
 	state, err := db.Prepare(sql)
 	checkErr(err)
 	result, err := state.Query(email, password)
+	var u user
+	var flag int
 	if result.Next() {
-		return true
+		// return true
+		result.Scan(&u.ID, &u.UserName, &u.Email, &u.Password, &flag)
+		return u
 	}
-	return false
+	return user{}
 }
 
 //检查是否激活

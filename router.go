@@ -301,8 +301,8 @@ func userLogin(w http.ResponseWriter, r *http.Request) {
 		if flag := checkFlag(email); flag == 0 { //flag等于0，未激活
 			status = "unActivation"
 		} else {
-			if checkLogin(email, password) {
-				status = "success"
+			if u := checkLogin(email, password); u.UserName != "" {
+				status = "success" + "-" + strconv.Itoa(u.ID) + "-" + u.UserName
 			} else {
 				status = "noPassword"
 			}
