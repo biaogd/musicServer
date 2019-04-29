@@ -309,3 +309,87 @@ func getNewByIds() []music {
 	}
 	return mList
 }
+
+//查找邮箱是否已经被注册
+//return true when
+func findUser(email string) bool {
+	db := getDB()
+	defer db.Close()
+	sql := "select *from users where email=?"
+	state, err := db.Prepare(sql)
+	if err != nil {
+		panic(err)
+	}
+	result, err := state.Query(email)
+	if err != nil {
+		panic(err)
+	}
+	if result.Next() {
+		return true
+	}
+	return false
+}
+
+func checkErr(err error) {
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+//添加一个用户
+//返回影响的行数
+func addUser(u user) int64 {
+	db := getDB()
+	defer db.Close()
+	sql := "insert into users(user_name,email,password,flag) values(?,?,?,?)"
+	state, err := db.Prepare(sql)
+	checkErr(err)
+	result, err := state.Exec(u.UserName, u.Email, u.Password, 0)
+	checkErr(err)
+	rows, err := result.RowsAffected()
+	checkErr(err)
+	return rows
+}
+
+//修改数据库flag,激活用户
+func activation(email string) int64 {
+	db := getDB()
+	defer db.Close()
+	sql := "update users set flag=1 where email=?"
+	res, err := db.Exec(sql, email)
+	checkErr(err)
+	count, err := res.RowsAffected()
+	checkErr(err)
+	return count
+}
+
+//检查用户名密码是否正确
+func checkLogin(email string, password string) bool {
+	db := getDB()
+	defer db.Close()
+	sql := "select *from users where email=? and password=?"
+	state, err := db.Prepare(sql)
+	checkErr(err)
+	result, err := state.Query(email, password)
+	if result.Next() {
+		return true
+	}
+	return false
+}
+
+//检查是否激活
+func checkFlag(email string) int {
+	db := getDB()
+	defer db.Close()
+	sql := "select flag from users where email=?"
+	res, err := db.Query(sql, email)
+	checkErr(err)
+	var flag int
+	for {
+		if res.Next() {
+			res.Scan(&flag)
+			break
+		}
+	}
+	return flag
+}

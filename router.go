@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"music/session"
+	"musicServer/session"
 	"net/http"
 	"os"
 	"strconv"
@@ -242,4 +242,75 @@ func returnNewMusic(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 	w.Write(js)
+}
+
+//用户注册处理
+func userRegister(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	v := r.PostForm
+	userName := v["userName"][0]
+	email := v["email"][0]
+	pw := v["pw"][0]
+	// pw2 := v["pw2"][0]
+	//查找数据库，查看这个邮箱是否已经被注册，被注册提示被注册，
+	//否则把信息加入到数据库中，提示根据邮件去激活这个账号
+	if findUser(email) {
+		//这个邮箱已经被注册
+		w.Write([]byte("failed"))
+	} else {
+		//没有被注册，发送邮件提示激活账号，返回注册成功
+		content := "<p>您已经注册成功，要正常使用，请先激活您的账号</p><br>" +
+			"<a href='http://www.mybiao.top:8000/music/user/activation?email=" + email + "'>点击链接激活账号</a>"
+		mySendMail(email, content)
+		addUser(user{0, userName, email, pw})
+		w.Write([]byte("successed"))
+	}
+}
+
+//用户激活
+func userActivation(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	email := r.Form["email"][0]
+	var out string
+	if email != "" {
+		i := activation(email)
+		if i > 0 {
+			out = "账号:" + email + " 激活成功"
+		} else {
+			out = "激活失败"
+		}
+	} else {
+		out = "激活失败"
+	}
+	w.Write([]byte(out))
+}
+
+//处理用户登录
+//unActivation 账号已注册，但未激活
+//success 登录成功
+//noPassword 密码错误
+//unRegister 用户未注册
+func userLogin(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	value := r.PostForm
+	email := value["email"][0]
+	password := value["password"][0]
+	var status string
+	if findUser(email) { //该用户已经注册了
+		log.Println("有用户登录")
+		if flag := checkFlag(email); flag == 0 { //flag等于0，未激活
+			status = "unActivation"
+		} else {
+			if checkLogin(email, password) {
+				status = "success"
+			} else {
+				status = "noPassword"
+			}
+		}
+
+	} else {
+		status = "unRegister"
+	}
+	log.Println(status)
+	w.Write([]byte(status))
 }
