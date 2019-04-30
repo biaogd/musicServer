@@ -351,6 +351,32 @@ func addUser(u user) int64 {
 	return rows
 }
 
+//根据email查找用户id
+func searchIDByEmail(email string) int {
+	db := getDB()
+	defer db.Close()
+	sql := "select id from users where email=?"
+	res, err := db.Query(sql, email)
+	checkErr(err)
+	var id int
+	if res.Next() {
+		res.Scan(&id)
+	}
+	return id
+}
+
+//用户添加歌单,返回影响的行数
+func insertSongList(id int, name string) int64 {
+	db := getDB()
+	defer db.Close()
+	sql := "insert into user_song(user_id,song_list_name,count) values(?,?,0)"
+	res, err := db.Exec(sql, id, name)
+	checkErr(err)
+	count, err := res.RowsAffected()
+	checkErr(err)
+	return count
+}
+
 //修改数据库flag,激活用户
 func activation(email string) int64 {
 	db := getDB()
@@ -396,4 +422,49 @@ func checkFlag(email string) int {
 		}
 	}
 	return flag
+}
+
+//插入一个歌单歌曲信息
+//返回影响的行数
+func insertListMusic(songListID, musicID, musicName, musicAuthor, musicPath string) int64 {
+	db := getDB()
+	defer db.Close()
+	sql := "insert into list_music(song_list_id,music_id,music_name,music_author,music_path) values(?,?,?,?,?)"
+	result, err := db.Exec(sql, songListID, musicID, musicName, musicAuthor, musicPath)
+	checkErr(err)
+	count, err := result.RowsAffected()
+	checkErr(err)
+	return count
+}
+
+//查找这个用户的所有歌单
+func selectSongList(userID int) []songList {
+	db := getDB()
+	defer db.Close()
+	sql := "select id,song_list_name,count from user_song where user_id=?"
+	result, err := db.Query(sql, userID)
+	checkErr(err)
+	var songLists []songList
+	for result.Next() {
+		var list songList
+		result.Scan(&list.ID, &list.SongListName, &list.Count)
+		songLists = append(songLists, list)
+	}
+	return songLists
+}
+
+//返回这个歌单所有歌曲信息
+func selectListBySongListID(id int) []selfSong {
+	db := getDB()
+	defer db.Close()
+	var songs []selfSong
+	sql := "select *from list_music where song_list_id = ?"
+	result, err := db.Query(sql, id)
+	checkErr(err)
+	for result.Next() {
+		var song selfSong
+		result.Scan(&song.ID, &song.ListID, &song.SongID, &song.SongName, &song.SongAuthor, &song.SongPath)
+		songs = append(songs, song)
+	}
+	return songs
 }

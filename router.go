@@ -267,7 +267,7 @@ func userRegister(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//用户激活
+//用户激活,并进行初始化
 func userActivation(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	email := r.Form["email"][0]
@@ -275,7 +275,16 @@ func userActivation(w http.ResponseWriter, r *http.Request) {
 	if email != "" {
 		i := activation(email)
 		if i > 0 {
-			out = "账号:" + email + " 激活成功"
+			id := searchIDByEmail(email)
+			if id != 0 {
+				if i := insertSongList(id, "我喜欢"); i > 0 {
+					out = "账号:" + email + " 激活成功"
+				} else {
+					out = "激活失败"
+				}
+			} else {
+				out = "激活失败"
+			}
 		} else {
 			out = "激活失败"
 		}
@@ -302,7 +311,16 @@ func userLogin(w http.ResponseWriter, r *http.Request) {
 			status = "unActivation"
 		} else {
 			if u := checkLogin(email, password); u.UserName != "" {
+				list := selectSongList(u.ID)
 				status = "success" + "-" + strconv.Itoa(u.ID) + "-" + u.UserName
+				for i, v := range list {
+					str := strconv.Itoa(v.ID) + "*" + v.SongListName + "*" + strconv.Itoa(v.Count)
+					if i == 0 {
+						status = status + "-" + str
+						continue
+					}
+					status = status + ";" + str
+				}
 			} else {
 				status = "noPassword"
 			}
@@ -313,4 +331,35 @@ func userLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Println(status)
 	w.Write([]byte(status))
+}
+
+//用户歌单，歌曲同步
+func syncAddMusic(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	value := r.PostForm
+	// userID := value["user_id"][0]
+	songListID := value["song_list_id"][0]
+	musicID := value["music_id"][0]
+	musicName := value["music_name"][0]
+	musicAuthor := value["music_author"][0]
+	musicPath := value["music_path"][0]
+	count := insertListMusic(songListID, musicID, musicName, musicAuthor, musicPath)
+	if count > 0 {
+		log.Println("插入成功")
+	} else {
+		log.Println("插入失败")
+	}
+}
+
+//通过歌单id获取这个歌单的所有歌曲
+func syncGetMusic(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	ids := r.Form["list_id"][0]
+	id, _ := strconv.Atoi(ids)
+	if id != 0 {
+		songs := selectListBySongListID(id)
+		js, err := json.Marshal(songs)
+		checkErr(err)
+		w.Write(js)
+	}
 }
