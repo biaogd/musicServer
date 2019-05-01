@@ -474,6 +474,16 @@ func selectListBySongListID(id int) []selfSong {
 func updateSongCount(id int, count int) {
 	db := getDB()
 	defer db.Close()
+	sql1 := "select count from user_song where id=?"
+	result, err := db.Query(sql1, id)
+	checkErr(err)
+	var ii int
+	if result.Next() {
+		result.Scan(&ii)
+	}
+	if ii == 0 && count == -1 {
+		return
+	}
 	sql := "update user_song set count=count " + strconv.Itoa(count) + " where id=?"
 	db.Exec(sql, id)
 }

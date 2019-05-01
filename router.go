@@ -390,6 +390,7 @@ func syncDelMusicByID(w http.ResponseWriter, r *http.Request) {
 	id, _ := strconv.Atoi(ids)
 	if i := deleteSongByID(id); i > 0 {
 		log.Println("删除成功")
+		updateSongCount(id, -1)
 	} else {
 		log.Println("删除失败")
 	}
