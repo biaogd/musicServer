@@ -343,6 +343,7 @@ func syncAddMusic(w http.ResponseWriter, r *http.Request) {
 	musicName := value["music_name"][0]
 	musicAuthor := value["music_author"][0]
 	musicPath := value["music_path"][0]
+	log.Println("得到用户歌曲上传请求")
 	count := insertListMusic(songListID, musicID, musicName, musicAuthor, musicPath)
 	if count > 0 {
 		log.Println("插入成功")
