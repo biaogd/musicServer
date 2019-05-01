@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -467,4 +468,38 @@ func selectListBySongListID(id int) []selfSong {
 		songs = append(songs, song)
 	}
 	return songs
+}
+
+//更新歌单歌曲数目
+func updateSongCount(id int, count int) {
+	db := getDB()
+	defer db.Close()
+	sql := "update user_song set count=count " + strconv.Itoa(count) + " where id=?"
+	db.Exec(sql, id)
+}
+
+//删除id为listID的歌单的名称为songName,作者为songAuthor的歌曲
+//return affect rows
+func deleteSongFromList(listID int, songName, songAuthor string) int64 {
+	db := getDB()
+	defer db.Close()
+	sql := "delete from list_music where song_list_id=? and music_name=? and music_author=?"
+	res, err := db.Exec(sql, listID, songName, songAuthor)
+	checkErr(err)
+	count, err := res.RowsAffected()
+	checkErr(err)
+	return count
+}
+
+//通过主键删除歌曲
+//返回影响的行数
+func deleteSongByID(songID int) int64 {
+	db := getDB()
+	defer db.Close()
+	sql := "delete from list_music where id=?"
+	res, err := db.Exec(sql, songID)
+	checkErr(err)
+	count, err := res.RowsAffected()
+	checkErr(err)
+	return count
 }

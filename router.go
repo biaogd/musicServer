@@ -346,6 +346,8 @@ func syncAddMusic(w http.ResponseWriter, r *http.Request) {
 	log.Println("得到用户歌曲上传请求")
 	count := insertListMusic(songListID, musicID, musicName, musicAuthor, musicPath)
 	if count > 0 {
+		id, _ := strconv.Atoi(musicID)
+		updateSongCount(id, 1)
 		log.Println("插入成功")
 	} else {
 		log.Println("插入失败")
@@ -362,5 +364,33 @@ func syncGetMusic(w http.ResponseWriter, r *http.Request) {
 		js, err := json.Marshal(songs)
 		checkErr(err)
 		w.Write(js)
+	}
+}
+
+//从歌单中删除这个歌曲
+func syncDelMusic(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	value := r.PostForm
+	listID := value["listId"][0]
+	songName := value["songName"][0]
+	songAuthor := value["songAuthor"][0]
+	id, _ := strconv.Atoi(listID)
+	if i := deleteSongFromList(id, songName, songAuthor); i > 0 {
+		updateSongCount(id, -1) //歌单歌曲数量减1
+		log.Println(listID, songName, songAuthor, "删除成功")
+	} else {
+		log.Println(listID, songName, songAuthor, "删除失败")
+	}
+}
+
+//通过歌单歌曲id删除歌曲
+func syncDelMusicByID(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	ids := r.Form["songId"][0]
+	id, _ := strconv.Atoi(ids)
+	if i := deleteSongByID(id); i > 0 {
+		log.Println("删除成功")
+	} else {
+		log.Println("删除失败")
 	}
 }
