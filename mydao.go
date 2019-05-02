@@ -3,8 +3,8 @@ package main
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"log"
-	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -454,6 +454,22 @@ func selectSongList(userID int) []songList {
 	return songLists
 }
 
+//查找用户的歌单id,通过用户id和歌单名称
+//返回歌单的id
+func selectSongListID(userID int, listName string) int {
+	db := getDB()
+	defer db.Close()
+	var id int
+	fmt.Println(userID, listName)
+	sql := "select id from user_song where user_id=? and song_list_name=?"
+	result, err := db.Query(sql, userID, listName)
+	checkErr(err)
+	if result.Next() {
+		result.Scan(&id)
+	}
+	return id
+}
+
 //返回这个歌单所有歌曲信息
 func selectListBySongListID(id int) []selfSong {
 	db := getDB()
@@ -471,21 +487,19 @@ func selectListBySongListID(id int) []selfSong {
 }
 
 //更新歌单歌曲数目
-func updateSongCount(id int, count int) {
+func updateSongCount(listID int, count int) {
 	db := getDB()
 	defer db.Close()
-	sql1 := "select count from user_song where id=?"
-	result, err := db.Query(sql1, id)
-	checkErr(err)
-	var ii int
-	if result.Next() {
-		result.Scan(&ii)
+	var sql string
+	if count > 0 {
+		sql = "update user_song set count=count+? where id=?"
+	} else {
+		sql = "update user_song set count=count-? where id=?"
 	}
-	if ii == 0 && count == -1 {
-		return
+	if count < 0 {
+		count = -count
 	}
-	sql := "update user_song set count=count " + strconv.Itoa(count) + " where id=?"
-	db.Exec(sql, id)
+	db.Exec(sql, count, listID)
 }
 
 //删除id为listID的歌单的名称为songName,作者为songAuthor的歌曲
@@ -510,6 +524,20 @@ func deleteSongByID(songID int) int64 {
 	res, err := db.Exec(sql, songID)
 	checkErr(err)
 	count, err := res.RowsAffected()
+	checkErr(err)
+	return count
+}
+
+//添加一个歌单
+//参数 userId 用户的id;listName 歌单的名称
+//返回值 影响的行数
+func addSongList(userID int, listName string) int64 {
+	db := getDB()
+	defer db.Close()
+	sql := "insert into user_song(user_id,song_list_name,count) values(?,?,?)"
+	result, err := db.Exec(sql, userID, listName, 0)
+	checkErr(err)
+	count, err := result.RowsAffected()
 	checkErr(err)
 	return count
 }

@@ -346,7 +346,7 @@ func syncAddMusic(w http.ResponseWriter, r *http.Request) {
 	log.Println("得到用户歌曲上传请求")
 	count := insertListMusic(songListID, musicID, musicName, musicAuthor, musicPath)
 	if count > 0 {
-		id, _ := strconv.Atoi(musicID)
+		id, _ := strconv.Atoi(songListID)
 		updateSongCount(id, 1)
 		log.Println("插入成功")
 	} else {
@@ -394,4 +394,28 @@ func syncDelMusicByID(w http.ResponseWriter, r *http.Request) {
 	} else {
 		log.Println("删除失败")
 	}
+}
+
+//处理新建歌单并且返回歌单信息
+func httpAddSongList(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	value := r.PostForm
+	id := value["userId"][0]
+	userID, err := strconv.Atoi(id)
+	checkErr(err)
+	listName := value["listName"][0]
+	i := addSongList(userID, listName)
+	var bytes []byte
+	var sList songList
+	if i > 0 {
+		//歌单已加入到数据库
+		listID := selectSongListID(userID, listName)
+		sList = songList{listID, listName, 0}
+		log.Println("歌单", listName, "添加成功")
+	} else {
+		log.Println("歌单", listName, "添加失败")
+	}
+	bytes, err = json.Marshal(sList)
+	checkErr(err)
+	w.Write(bytes)
 }
