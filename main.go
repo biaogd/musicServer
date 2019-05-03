@@ -1,11 +1,26 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"time"
+
+	_ "github.com/go-sql-driver/mysql"
 )
+
+var db *sql.DB
+
+func init() {
+	var err error
+	db, err = sql.Open("mysql", "root:,.Rfb8848@/mydb")
+	if err != nil {
+		panic(err)
+	}
+	db.SetMaxIdleConns(45)
+	db.SetMaxOpenConns(90)
+}
 
 //用于定时更新两个排行榜的数据
 func updateList() {
