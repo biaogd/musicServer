@@ -419,3 +419,22 @@ func httpAddSongList(w http.ResponseWriter, r *http.Request) {
 	checkErr(err)
 	w.Write(bytes)
 }
+
+//处理歌单的删除
+func httpDeleteSongList(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	value := r.PostForm
+	listID, err := strconv.Atoi(value["listId"][0])
+	checkErr(err)
+	if i := deleteSongList(listID); i > 0 {
+		if j := deleteAllByListID(listID); j > 0 {
+			log.Println(listID, "歌单歌曲已删除", j)
+		} else {
+			log.Println(listID, "歌单歌曲删除失败")
+		}
+		log.Println(listID, "歌单已删除", i)
+	} else {
+		log.Println(listID, "歌单删除失败")
+	}
+	w.Write([]byte("success"))
+}

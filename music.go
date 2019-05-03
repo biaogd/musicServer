@@ -23,9 +23,9 @@ type myApp struct {
 }
 
 type songList struct {
-	ID           int
-	SongListName string
-	Count        int
+	ID           int    //歌单id
+	SongListName string //歌单名称
+	Count        int    //歌单数量
 }
 
 //用户登录后从服务器获取歌单的结构体

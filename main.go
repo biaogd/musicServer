@@ -54,6 +54,7 @@ func main() {
 	http.HandleFunc("/music/user/syncDelMusic", syncDelMusic)
 	http.HandleFunc("/music/user/syncDelMusicById", syncDelMusicByID)
 	http.HandleFunc("/music/user/addSongList", httpAddSongList)
+	http.HandleFunc("/music/user/deleteSongList", httpDeleteSongList)
 	fmt.Println("服务已启动在port:8000")
 	http.ListenAndServe(":8000", nil)
 	// http.ListenAndServeTLS(":8000", "cert.pem", "key.pem", nil)

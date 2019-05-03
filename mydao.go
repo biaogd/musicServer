@@ -541,3 +541,29 @@ func addSongList(userID int, listName string) int64 {
 	checkErr(err)
 	return count
 }
+
+//删除一个歌单，
+//返回影响的行数
+func deleteSongList(listID int) int64 {
+	db := getDB()
+	defer db.Close()
+	sql := "delete from user_song where id=?"
+	result, err := db.Exec(sql, listID)
+	checkErr(err)
+	count, err := result.RowsAffected()
+	checkErr(err)
+	return count
+}
+
+//删除id为listID的歌单的全部歌曲
+//返回影响的行数
+func deleteAllByListID(listID int) int64 {
+	db := getDB()
+	defer db.Close()
+	sql := "delete from list_music where song_list_id=?"
+	result, err := db.Exec(sql, listID)
+	checkErr(err)
+	count, err := result.RowsAffected()
+	checkErr(err)
+	return count
+}
