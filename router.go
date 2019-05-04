@@ -224,26 +224,6 @@ func downloadApp(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//返回热歌20个
-func returnPopularMusic(w http.ResponseWriter, r *http.Request) {
-	mList := getPopularByIds()
-	js, err := json.Marshal(mList)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-	w.Write(js)
-}
-
-//返回最新的20个歌曲
-func returnNewMusic(w http.ResponseWriter, r *http.Request) {
-	mList := getNewByIds()
-	js, err := json.Marshal(mList)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-	w.Write(js)
-}
-
 //用户注册处理
 func userRegister(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
@@ -261,7 +241,7 @@ func userRegister(w http.ResponseWriter, r *http.Request) {
 		//没有被注册，发送邮件提示激活账号，返回注册成功
 		content := "<p>您已经注册成功，要正常使用，请先激活您的账号</p><br>" +
 			"<a href='http://www.mybiao.top:8000/music/user/activation?email=" + email + "'>点击链接激活账号</a>"
-		mySendMail(email, content)
+		go mySendMail(email, content)
 		addUser(user{0, userName, email, pw})
 		w.Write([]byte("successed"))
 	}
@@ -437,4 +417,31 @@ func httpDeleteSongList(w http.ResponseWriter, r *http.Request) {
 		log.Println(listID, "歌单删除失败")
 	}
 	w.Write([]byte("success"))
+}
+
+//处理错误报告
+func httpInsertError(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	value := r.PostForm
+	userEmail := value["userEmail"][0]
+	now := value["time"][0]
+	text := value["text"][0]
+	i := insertErrorReport(userEmail, text, now)
+	if i > 0 {
+		w.Write([]byte("success"))
+	} else {
+		w.Write([]byte("falied"))
+	}
+}
+
+//使用redis缓存排行榜popular
+func redisGetPopular(w http.ResponseWriter, r *http.Request) {
+	pop := getSongs("popular")
+	w.Write(pop)
+}
+
+//使用redis缓存排行榜new
+func redisGetNew(w http.ResponseWriter, r *http.Request) {
+	news := getSongs("new")
+	w.Write(news)
 }

@@ -14,6 +14,6 @@ func mySendMail(toEmail string, content string) error {
 	toUsers := "To: " + strings.Join(to, ",")
 	body := "\n\n\n" + content
 	msg := strings.Join([]string{nickName, subject, toUsers, contentType, body}, "\r\n")
-	err := smtp.SendMail("smtp.qq.com:25", auth, "1335783803@qq.com", to, []byte(msg))
+	err := smtp.SendMail("smtp.qq.com:587", auth, "1335783803@qq.com", to, []byte(msg))
 	return err
 }

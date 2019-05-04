@@ -2,13 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-redis/redis"
-
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -21,12 +20,12 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	db.SetMaxIdleConns(45)
-	db.SetMaxOpenConns(90)
+	db.SetMaxIdleConns(200)
+	db.SetMaxOpenConns(500)
 
 	//初始化redis连接对象
 	client = redis.NewClient(&redis.Options{
-		Addr: "6379",
+		Addr: "localhost:6379",
 	})
 }
 
@@ -36,24 +35,33 @@ func updateList() {
 		now := time.Now()
 		hour, minute, second := now.Clock()
 		if hour == 0 && minute == 0 && second == 0 {
-			clearTable()
+			// clearTable()
 			pm := getMostListen()
 			nm := getNewMusic()
-			insertID("popular", pm)
-			insertID("new", nm)
-			log.Println("更新排行榜了")
+			// insertID("popular", pm)
+			// insertID("new", nm)
+			// log.Println("更新排行榜了")
+			pmjson, _ := json.Marshal(pm)
+			redisAddSongs("popular", pmjson)
+
+			nmjson, _ := json.Marshal(nm)
+			redisAddSongs("new", nmjson)
 		}
 	}
 }
 
 func main() {
 	// clearTable()
-	// pm := getMostListen()
-	// nm := getNewMusic()
+	pm := getMostListen()
+	nm := getNewMusic()
+	pmjson, _ := json.Marshal(pm)
+	redisAddSongs("popular", pmjson)
+	nmjson, _ := json.Marshal(nm)
+	redisAddSongs("new", nmjson)
 	// insertID("popular", pm)
 	// insertID("new", nm)
 	// log.Println("更新排行榜了")
-	// go updateList()
+	go updateList()
 	http.HandleFunc("/user/login", loginIn)
 	http.HandleFunc("/login_in", comeWabSite)
 	http.HandleFunc("/login_out", loginOut)
@@ -67,8 +75,8 @@ func main() {
 	http.HandleFunc("/uploadApp", dealAppUpdate)
 	http.HandleFunc("/checkUpdate", checkUpdate)
 	http.HandleFunc("/downloadApp", downloadApp)
-	http.HandleFunc("/song/popular", returnPopularMusic)
-	http.HandleFunc("/song/new", returnNewMusic)
+	http.HandleFunc("/song/popular", redisGetPopular)
+	http.HandleFunc("/song/new", redisGetNew)
 	http.HandleFunc("/music/user/register", userRegister)
 	http.HandleFunc("/music/user/activation", userActivation)
 	http.HandleFunc("/music/user/login", userLogin)
@@ -78,7 +86,7 @@ func main() {
 	http.HandleFunc("/music/user/syncDelMusicById", syncDelMusicByID)
 	http.HandleFunc("/music/user/addSongList", httpAddSongList)
 	http.HandleFunc("/music/user/deleteSongList", httpDeleteSongList)
+	http.HandleFunc("/errorReport", httpInsertError)
 	fmt.Println("服务已启动在port:8000")
 	http.ListenAndServe(":8000", nil)
-	// http.ListenAndServeTLS(":8000", "cert.pem", "key.pem", nil)
 }

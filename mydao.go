@@ -148,31 +148,31 @@ func clearCount() {
 	db.Exec(sql)
 }
 
-//返回歌曲收听次数的前20名
+//返回歌曲收听次数的前30名
 func getMostListen() []music {
 	var mlist []music
-	sql := "select *from music order by count desc limit 20"
+	sql := "select *from music order by count desc limit 30"
 	rows, err := db.Query(sql)
 	checkErr(err)
 	defer rows.Close()
 	for rows.Next() {
 		var m music
-		rows.Scan(&m.ID, &m.SongName, &m.SongName, &m.AllTime, &m.SongSize, &m.URL, &m.Count)
+		rows.Scan(&m.ID, &m.SongName, &m.SongAuthor, &m.AllTime, &m.SongSize, &m.URL, &m.Count)
 		mlist = append(mlist, m)
 	}
 	return mlist
 }
 
-//返回歌曲最新上传的前20个
+//返回歌曲最新上传的前30个
 func getNewMusic() []music {
 	var mList []music
-	sql := "select *from music order by id desc limit 20"
+	sql := "select *from music order by id desc limit 30"
 	rows, err := db.Query(sql)
 	checkErr(err)
 	defer rows.Close()
 	for rows.Next() {
 		var m music
-		rows.Scan(&m.ID, &m.SongName, &m.SongName, &m.AllTime, &m.SongSize, &m.URL, &m.Count)
+		rows.Scan(&m.ID, &m.SongName, &m.SongAuthor, &m.AllTime, &m.SongSize, &m.URL, &m.Count)
 		mList = append(mList, m)
 	}
 	return mList
@@ -226,55 +226,6 @@ func insertID(table string, mList []music) {
 		}
 	}
 
-}
-
-//先从popular表中找到歌曲id,在从歌曲表中返回歌曲信息
-func getPopularByIds() []music {
-	var ids []int
-	sql := "select song_id from popular"
-	rows, _ := db.Query(sql)
-	for rows.Next() {
-		var id int
-		rows.Scan(&id)
-		ids = append(ids, id)
-	}
-	var mList []music
-	sqls := "select *from music where id=?"
-	state, _ := db.Prepare(sqls)
-	for _, id := range ids {
-		var mu music
-		rows, _ := state.Query(id)
-		for rows.Next() {
-			rows.Scan(&mu.ID, &mu.SongName, &mu.SongAuthor, &mu.AllTime, &mu.SongSize, &mu.URL, &mu.Count)
-			break
-		}
-		mList = append(mList, mu)
-	}
-	return mList
-}
-
-func getNewByIds() []music {
-	var ids []int
-	sql := "select song_id from new"
-	rows, _ := db.Query(sql)
-	for rows.Next() {
-		var id int
-		rows.Scan(&id)
-		ids = append(ids, id)
-	}
-	var mList []music
-	sqls := "select *from music where id=?"
-	state, _ := db.Prepare(sqls)
-	for _, id := range ids {
-		var mu music
-		rows, _ := state.Query(id)
-		for rows.Next() {
-			rows.Scan(&mu.ID, &mu.SongName, &mu.SongAuthor, &mu.AllTime, &mu.SongSize, &mu.URL, &mu.Count)
-			break
-		}
-		mList = append(mList, mu)
-	}
-	return mList
 }
 
 //查找邮箱是否已经被注册
@@ -498,6 +449,16 @@ func deleteSongList(listID int) int64 {
 func deleteAllByListID(listID int) int64 {
 	sql := "delete from list_music where song_list_id=?"
 	result, err := db.Exec(sql, listID)
+	checkErr(err)
+	count, err := result.RowsAffected()
+	checkErr(err)
+	return count
+}
+
+//错误报告插入到数据库当中
+func insertErrorReport(email, content, time string) int64 {
+	sql := "insert into error_report(email,content,time) values(?,?,?)"
+	result, err := db.Exec(sql, email, content, time)
 	checkErr(err)
 	count, err := result.RowsAffected()
 	checkErr(err)
