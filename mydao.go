@@ -6,15 +6,6 @@ import (
 	"log"
 )
 
-//获得连接对象
-// func getDB() *sql.DB {
-// 	db, err := sql.Open("mysql", "root:,.Rfb8848@/mydb")
-// 	if err != nil {
-// 		log.Panicln(err)
-// 	}
-// 	return db
-// }
-
 //插入单个歌曲信息
 func insertMusic(m music) error {
 	sql := "insert into music(song_name,song_author,all_time,song_size,url,count) values(?,?,?,?,?,?)"

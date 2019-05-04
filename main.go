@@ -7,10 +7,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-redis/redis"
+
 	_ "github.com/go-sql-driver/mysql"
 )
 
 var db *sql.DB
+var client *redis.Client
 
 func init() {
 	var err error
@@ -20,6 +23,11 @@ func init() {
 	}
 	db.SetMaxIdleConns(45)
 	db.SetMaxOpenConns(90)
+
+	//初始化redis连接对象
+	client = redis.NewClient(&redis.Options{
+		Addr: "6379",
+	})
 }
 
 //用于定时更新两个排行榜的数据
