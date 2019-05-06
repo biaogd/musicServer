@@ -253,20 +253,25 @@ func userActivation(w http.ResponseWriter, r *http.Request) {
 	email := r.Form["email"][0]
 	var out string
 	if email != "" {
-		i := activation(email)
-		if i > 0 {
-			id := searchIDByEmail(email)
-			if id != 0 {
-				if i := insertSongList(id, "我喜欢"); i > 0 {
-					out = "账号:" + email + " 激活成功"
+		if j := checkFlag(email); j == 1 {
+			//如果已经激活了
+			out = "该用户已经激活，无需反复激活"
+		} else {
+			i := activation(email)
+			if i > 0 {
+				id := searchIDByEmail(email)
+				if id != 0 {
+					if i := insertSongList(id, "我喜欢"); i > 0 {
+						out = "账号:" + email + " 激活成功"
+					} else {
+						out = "激活失败"
+					}
 				} else {
 					out = "激活失败"
 				}
 			} else {
 				out = "激活失败"
 			}
-		} else {
-			out = "激活失败"
 		}
 	} else {
 		out = "激活失败"
