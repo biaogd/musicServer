@@ -33,20 +33,16 @@ func init() {
 func updateList() {
 	for {
 		now := time.Now()
-		hour, minute, second := now.Clock()
-		if hour == 0 && minute == 0 && second == 0 {
-			// clearTable()
-			pm := getMostListen()
-			nm := getNewMusic()
-			// insertID("popular", pm)
-			// insertID("new", nm)
-			// log.Println("更新排行榜了")
-			pmjson, _ := json.Marshal(pm)
-			redisAddSongs("popular", pmjson)
-
-			nmjson, _ := json.Marshal(nm)
-			redisAddSongs("new", nmjson)
-		}
+		next := now.Add(time.Hour * 24)
+		next = time.Date(next.Year(), next.Month(), next.Day(), 0, 0, 0, 0, next.Location())
+		t := time.NewTimer(next.Sub(next))
+		<-t.C
+		pm := getMostListen()
+		nm := getNewMusic()
+		pmjson, _ := json.Marshal(pm)
+		redisAddSongs("popular", pmjson)
+		nmjson, _ := json.Marshal(nm)
+		redisAddSongs("new", nmjson)
 	}
 }
 
