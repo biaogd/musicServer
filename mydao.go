@@ -62,19 +62,17 @@ func findMusicBySongName(name string) int {
 //歌曲搜索,使用模糊搜索
 func findMusicByWord(word string, like int) []music {
 	var musicList []music
-	var sql, param string
+	var sql string
 	//模糊搜索
 	if like == 0 {
 		sql = "select *from music where url like concat('%',?,'%')"
-		param = word
 	} else {
 		//中文全文检索，这是默认的自然语言检索方式，还有boolean模式
-		sql = "select *from music where match(url) against(?)"
-		param = "*" + word + "*"
+		sql = "select *from music where match(song_name,song_author) against(?)"
 	}
 	state, err := db.Prepare(sql)
 	checkErr(err)
-	row, err := state.Query(param)
+	row, err := state.Query(word)
 	checkErr(err)
 	defer row.Close()
 	if err != nil {
