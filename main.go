@@ -83,6 +83,9 @@ func main() {
 	http.HandleFunc("/music/user/addSongList", httpAddSongList)
 	http.HandleFunc("/music/user/deleteSongList", httpDeleteSongList)
 	http.HandleFunc("/errorReport", httpInsertError)
+	http.HandleFunc("/music/user/losePassword", losePassword)
+	http.HandleFunc("/music/user/verifyCode", verifyCode)
+	http.HandleFunc("/music/user/modifyPW", modifyPW)
 	fmt.Println("服务已启动在port:8000")
 	http.ListenAndServe(":8000", nil)
 }

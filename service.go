@@ -1,6 +1,12 @@
 package main
 
-import "strings"
+import (
+	"bytes"
+	"math/rand"
+	"strconv"
+	"strings"
+	"time"
+)
 
 func transform(song string, size int64) music {
 	var mu music
@@ -14,4 +20,15 @@ func transform(song string, size int64) music {
 		mu.Count = 0
 	}
 	return mu
+}
+
+func getVerifyCode() string {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	var num string
+	buf := bytes.NewBufferString(num)
+	for i := 0; i < 6; i++ {
+		n := r.Intn(10)
+		buf.WriteString(strconv.Itoa(n))
+	}
+	return buf.String()
 }

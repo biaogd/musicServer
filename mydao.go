@@ -462,3 +462,13 @@ func insertErrorReport(email, content, time string) int64 {
 	checkErr(err)
 	return count
 }
+
+//修改用户密码
+func updatePW(email, pw string) int64 {
+	sql := "update users set password=? where email=?"
+	result, err := db.Exec(sql, pw, email)
+	checkErr(err)
+	count, err := result.RowsAffected()
+	checkErr(err)
+	return count
+}

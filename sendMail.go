@@ -6,7 +6,7 @@ import (
 )
 
 func mySendMail(toEmail string, content string) error {
-	auth := smtp.PlainAuth("", "1335783803@qq.com", "peynpmapjgezhdgd", "smtp.qq.com")
+	auth := smtp.PlainAuth("", "1335783803@qq.com", "oqnftxieemaghdhg", "smtp.qq.com")
 	to := []string{toEmail}
 	contentType := "Content-Type: text/html; charset=utf-8"
 	nickName := "From:" + "biao" + "<1335783803@qq.com>"

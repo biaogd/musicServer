@@ -450,3 +450,50 @@ func redisGetNew(w http.ResponseWriter, r *http.Request) {
 	news := getSongs("new")
 	w.Write(news)
 }
+
+//忘记密码处理
+func losePassword(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	email := r.Form["email"][0]
+	if !findUser(email) {
+		w.Write([]byte("noUser"))
+	} else {
+		code := getVerifyCode()
+		content := "<p>验证码：" + code + "</p>"
+		go mySendMail(email, content)
+		redisSet(email, code)
+		w.Write([]byte("next"))
+	}
+}
+
+//检查验证码是否正确
+func verifyCode(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	email := r.Form["email"][0]
+	code := r.Form["code"][0]
+	codes := redisGet(email)
+	fmt.Println("code=", code, "codes=", codes)
+	var str string
+	if code == codes {
+		str = "correct"
+	} else {
+		str = "notCorrect"
+	}
+	w.Write([]byte(str))
+}
+
+//修改密码
+
+func modifyPW(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	value := r.PostForm
+	email := value["email"][0]
+	pw := value["pw"][0]
+	var status string
+	if updatePW(email, pw) > 0 {
+		status = "success"
+	} else {
+		status = "falied"
+	}
+	w.Write([]byte(status))
+}
